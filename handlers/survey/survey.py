@@ -55,6 +55,7 @@ def get_phone_num(message: Message) -> None:
 @bot.message_handler(content_types=['text', 'contact'], state=UserStateInfo.phone_num)
 def get_contact_info(message: Message) -> None:
     if message.content_type == 'contact':
+        bot.set_state(message.from_user.id, UserStateInfo.info_collected, message.chat.id)
         with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
             data['phone_number'] = message.contact.phone_number
             contact_info = f"Спасибо. Данные записал\n" \
@@ -64,6 +65,7 @@ def get_contact_info(message: Message) -> None:
                            f"Город проживания - {data['city']}\n" \
                            f"Номер телефона - {data['phone_number']}"
             bot.send_message(message.from_user.id, contact_info)
+            bot.send_message(message.chat.id, "Давайте приступим к подбору отеля для Вас. "
+                                              "Чтобы ознакомиться с основными командами и их описанием, наберите /help")
     else:
         bot.send_message(message.from_user.id, "Чтобы отправить контактную информация необходимо нажать на кнопку.")
-        exit()

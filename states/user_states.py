@@ -6,3 +6,4 @@ class UserStateInfo(StatesGroup):
     country = State()
     city = State()
     phone_num = State()
+    info_collected = State()
