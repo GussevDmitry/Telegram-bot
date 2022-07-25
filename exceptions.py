@@ -1,0 +1,2 @@
+class HotelPhotoError(Exception):
+    pass
