@@ -9,9 +9,9 @@ def get_info(url, querystring):
     }
 
     try:
-        responce = requests.request("GET", url=url, headers=headers, params=querystring, timeout=10)
-        if responce.status_code == requests.codes.ok:
-            return responce.text
+        response = requests.request("GET", url=url, headers=headers, params=querystring, timeout=10)
+        if response.status_code == requests.codes.ok:
+            return response.text
     except requests.ConnectionError:
         print('Connection failed! Check the URL or request parameters.')
 

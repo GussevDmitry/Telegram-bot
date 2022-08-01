@@ -1,40 +1,49 @@
+import re
+import json
+import os
 from loader import bot
-from handlers.choice_collector import basic_data
 from states.user_states import UserStateInfo
 from telebot.types import Message
-from get_API_info import get_info
+from keyboards.inline.place_choice import place_choice
+from utils.get_API_info import get_info
+from utils.collecting_places_data import collecting_data_places
+
+# data = {
+#     'dates_to': None,
+#     'dates_from': None,
+#     'days_count': 0,
+#     'hotels_count': 0,
+#     'hotel_photo': {
+#         'need_photo': False,
+#         'photo_count': 0
+#     },
+#     'querystring': {
+#         'locale': None,
+#         'currency': None,
+#         'query': None
+#     }
+# }
+
 
 @bot.message_handler(state=UserStateInfo.lowprice)
 def lowprice_search(message: Message) -> None:
 
-    # basic_data = {
-    #     'dates_to': None,
-    #     'dates_from': None,
-    #     'days_count': 0,
-    #     'hotels_count': 0,
-    #     'hotel_photo': {
-    #         'need_photo': False,
-    #         'photo_count': 0
-    #     },
-    #     'querystring': {
-    #         'locale': None,
-    #         'currency': None,
-    #         'query': None
-    #     }
-    # }
+    # with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
+    #     location_info = get_info(url='https://hotels4.p.rapidapi.com/locations/v2/search', querystring=data['querystring'])
+    # # \U0001F44D\n большой палец вверх
+    # pattern = r'(?<="CITY_GROUP",).+?[\]]'
+    # find = re.search(pattern, location_info)
 
-    text = f"Ищем отель в городе {basic_data['querystring']['query']}\n" \
-           f"Стоимость выводим в валюте {basic_data['querystring']['currency']}\n" \
-           f"Даты с {basic_data['dates_to']} по {basic_data['dates_from']}\n" \
-           f"Всего дней - {basic_data['days_count']}\n" \
-           f"Показываю {basic_data['hotels_count']} отелей\n"
+    with open(os.path.abspath(os.path.join('test.txt')), 'r') as file:
+        temp_data = file.read()
 
-    bot.send_message(message.from_user.id, text)
+    pattern = r'(?<="CITY_GROUP",).+?[\]]'
+    find = re.search(pattern, temp_data)
+    if find:
+        location_info_result = json.loads(f"{{{find[0]}}}")
+        bot.send_message(message.from_user.id, "Уточните, пожалуйста, где ищем:",
+                        reply_markup=place_choice(places=collecting_data_places(location_info_result)))
+    else:
+        bot.send_message(message.from_user.id, "Извините, по данному городу информации нет.")
 
-    data = get_info(url='https://hotels4.p.rapidapi.com/locations/v2/search', querystring=basic_data['querystring'])
-    print(data)
 
-    with open('test.txt', 'w') as file:
-        file.write(data)
-
-    bot.stop_polling()

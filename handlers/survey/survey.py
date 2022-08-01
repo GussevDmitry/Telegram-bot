@@ -58,14 +58,14 @@ def get_contact_info(message: Message) -> None:
         bot.set_state(message.from_user.id, UserStateInfo.info_collected, message.chat.id)
         with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
             data['phone_number'] = message.contact.phone_number
-            contact_info = f"Спасибо. Данные записал\n" \
-                           f"Имя - {data['name']}\n" \
-                           f"Возраст - {data['age']}\n" \
-                           f"Страна проживания - {data['country']}\n" \
-                           f"Город проживания - {data['city']}\n" \
-                           f"Номер телефона - {data['phone_number']}"
-            bot.send_message(message.from_user.id, contact_info)
-            bot.send_message(message.chat.id, "Давайте приступим к подбору отеля для Вас. "
-                                              "Чтобы ознакомиться с основными командами и их описанием, наберите /help")
+        contact_info = f"Спасибо. Данные записал\n" \
+                       f"Имя - {data['name']}\n" \
+                       f"Возраст - {data['age']}\n" \
+                       f"Страна проживания - {data['country']}\n" \
+                       f"Город проживания - {data['city']}\n" \
+                       f"Номер телефона - {data['phone_number']}"
+        bot.send_message(message.from_user.id, contact_info)
+        bot.send_message(message.chat.id, "Давайте приступим к подбору отеля для Вас. "
+                                          "Чтобы ознакомиться с основными командами и их описанием, наберите /help")
     else:
         bot.send_message(message.from_user.id, "Чтобы отправить контактную информация необходимо нажать на кнопку.")
