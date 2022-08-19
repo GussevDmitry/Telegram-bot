@@ -2,12 +2,10 @@ import re
 import json
 from loader import bot
 from states.user_states import UserStateInfo
-from telebot.types import Message, CallbackQuery
-from keyboards.inline.place_choice import place_choice
-from keyboards.reply.start_search import start_search
+from telebot.types import Message
 from utils.get_API_info import get_info
-from utils.collecting_places_data import collecting_data_places
 from utils.collect_data_to_show import collect_data_to_show
+from utils.properties_info_results import properties_info_results
 
 
 # data = {
@@ -29,8 +27,20 @@ from utils.collect_data_to_show import collect_data_to_show
 #         'highprice' : {
 #
 #         },
-#         'destdeal' : {
-#
+#         'bestdeal' : {
+#             'header': 'Midtown, New York, New York, United States of America',
+#             'price_range' : '1000-2000',
+#             'distance_range' : '1-2',
+#             'results' : [
+#                 {
+#                     'id' : None,
+#                     'name' : 'Club Quarters Hotel, Grand Central',
+#                     'starRating' : 4.0,
+#                     'address' : f"address",
+#                     'landmark' : f"landmarks",
+#                     'price' : "fullyBundledPricePerStay"
+#                 }
+#             ]
 #         }
 #     },
 #     'rooms_amount': 0,
@@ -61,58 +71,6 @@ from utils.collect_data_to_show import collect_data_to_show
 # }
 
 
-@bot.message_handler(state=UserStateInfo.lowprice)
-def lowprice_presearch(message: Message) -> None:
-
-    # Через запрос к API
-    with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
-        location_info_lp = get_info(url='https://hotels4.p.rapidapi.com/locations/v2/search',
-                        querystring=data['querystring_location_search'])
-    pattern = r'(?<="CITY_GROUP",).+?[\]]'
-    find = re.search(pattern, location_info_lp)
-
-    if find:
-        location_info_result_lp = json.loads(f"{{{find[0]}}}")
-        bot.send_message(message.from_user.id, "Уточните, пожалуйста, где ищем:",
-                        reply_markup=place_choice(places=collecting_data_places(location_info_result_lp)))
-        with open('location_info_result_lp.json', 'w') as file:
-            json.dump(location_info_result_lp, file, indent=4)
-    else:
-        bot.send_message(message.from_user.id, "Извините, по данному городу информации нет.")
-
-    # Только для работы с файлом
-    # with open('parced_data/location_info_result_lp.json', 'r') as file:
-    #     location_info_result_lp = json.load(file)
-    # bot.send_message(message.from_user.id, "Уточните, пожалуйста, где ищем:",
-    #                  reply_markup=place_choice(places=collecting_data_places(location_info_result_lp)))
-
-
-@bot.callback_query_handler(func=lambda call: call.data.isdigit())
-def choose_place(call: CallbackQuery):
-    with bot.retrieve_data(call.from_user.id) as data:
-        data['querystring_properties_list'].update(
-            {'destinationId' : str(call.data)}
-        )
-        data['querystring_properties_list'].update(
-            {'sortOrder' : 'PRICE'}
-        )
-        data['search'].update(
-            {
-                f"{data.get('search').get('mode')}": {
-                    'header': call.data
-                }
-            }
-        )
-        data['search'][f"{data.get('search').get('mode')}"].update(
-            {
-                'results': []
-            }
-        )
-
-    bot.send_message(call.from_user.id, "Нажмите на кнопку для начала поиска.", reply_markup=start_search())
-    bot.register_next_step_handler(call.message, lowprice_search)
-
-
 def lowprice_search(message: Message) -> None:
     # Через запрос к API
     with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
@@ -120,42 +78,38 @@ def lowprice_search(message: Message) -> None:
                         querystring=data['querystring_properties_list'])
         flag = data.get('hotel_photo').get('need_photo')
 
-    with open('properties_info_lp.txt', 'w', encoding='utf-8') as file:
-        file.write(properties_info_lp)
+        with open(f"parced_data/properties_info_{data.get('search').get('mode')}.txt", 'w', encoding='utf-8') as file:
+            file.write(properties_info_lp)
 
-    with open('properties_info_lp.txt', 'r') as file:
-        temp_data = file.read()
-    result = json.loads(f"{temp_data}")
+        # result = re.search(r'(?<="searchResults":).+', properties_info)
+        # print(result.group(0))
+        # result = json.loads(f"{{{properties_info}}}")
 
-    # result = re.search(r'(?<="searchResults":).+', properties_info)
-    # print(result.group(0))
-    # result = json.loads(f"{{{properties_info}}}")
-
-    results = result.get('data').get('body').get('searchResults').get('results')
+        results = properties_info_results(data=data)
     #
 
     # Только для работы с файлом
-    # with open('parced_data/properties_info_lp.txt', 'r') as file:
+    # with open(f"parced_data/properties_info_{data.get('search').get('mode')}.txt", 'r') as file:
     #     temp_data = file.read()
     # result = json.loads(f"{temp_data}")
     # results = result.get('data').get('body').get('searchResults').get('results')
     # with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
     #     flag = data.get('hotel_photo').get('need_photo')
+    #
 
-    # with open('properties_info_lp.json', 'w') as file:
-    #     json.dump(results, file, indent=4)
+
 
     with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
         collect_data_to_show(data, results, flag)
 
         for i_index, i_data in enumerate(data['search'][f"{data.get('search').get('mode')}"]['results']):
             photos_text = '\n'.join(data['search'][f"{data.get('search').get('mode')}"]['results'][i_index].get('hotel_photos'))
+            lm_text = ', '.join(i_data.get('landmarks'))
             text = f"\U0001F3E8 Отель {i_data.get('name')}\n" \
                    f"Адрес - {i_data.get('address')}\n" \
-                   f"Расстояние до {i_data.get('landmark_1')}\n" \
-                   f"Расстояние до {i_data.get('landmark_2')}\n" \
+                   f"Расстояние до {lm_text}\n" \
                    f"Стоимость итого: {i_data.get('price')} за {data.get('rooms_amount')} " \
-                   f"комнаты для {data.get('people_amount')} гостей\n" \
+                   f"комнату(ы) для {data.get('people_amount')} гостей\n" \
                    f"Фотографии:\n{photos_text}"
             bot.send_message(message.from_user.id, text)
         print(data)

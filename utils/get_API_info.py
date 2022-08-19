@@ -9,7 +9,7 @@ def get_info(url, querystring):
     }
 
     try:
-        response = requests.request("GET", url=url, headers=headers, params=querystring, timeout=10)
+        response = requests.request("GET", url=url, headers=headers, params=querystring)
         if response.status_code == requests.codes.ok:
             return response.text
     except requests.ConnectionError:
@@ -17,5 +17,3 @@ def get_info(url, querystring):
 
 # url = 'https://hotels4.p.rapidapi.com/locations/v2/search'
 # querystring = {"query": f"{place}", "locale": "en_US", "currency": "USD"}
-
-
