@@ -1,11 +1,10 @@
 import math
 import json
-import re
 from states.user_states import UserStateInfo
 from loader import bot
 from telebot.types import Message
 from datetime import datetime
-from exceptions import HotelPhotoError, PriceException, DistanceException
+from exceptions import PriceException, DistanceException
 from utils.get_API_info import get_info
 from utils.collecting_places_data import collecting_data_places
 from keyboards.inline.language_choice import language_choice
@@ -13,6 +12,8 @@ from keyboards.inline.place_choice import place_choice
 from utils.print_data import print_data
 from utils.collecting_lm_ids import collecting_lm_ids
 from utils.location_info_results import location_info_results
+from database.request_filling import request_filling
+from keyboards.inline.create_calendar import create_calendar
 
 
 # data = {
@@ -68,7 +69,6 @@ from utils.location_info_results import location_info_results
 
 @bot.message_handler(state=UserStateInfo.info_collected, commands=['lowprice', 'highprice', 'bestdeal'])
 def choose_lang(message: Message) -> None:
-    # if UserStateInfo is UserStateInfo.info_collected:
     with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
         data['search'] = {
             'mode': message.text[1:]
@@ -76,8 +76,6 @@ def choose_lang(message: Message) -> None:
     bot.send_message(message.from_user.id, "Выберете предпочтительный язык поиска.",
                      reply_markup=language_choice())
     bot.set_state(message.from_user.id, UserStateInfo.search_city, message.chat.id)
-    # else:
-    #     bot.send_message(message.from_user.id, "Сначала неоходимо пройти регистрацию. Для этого наберите команду /survey")
 
 
 @bot.message_handler(states=UserStateInfo.search_city)
@@ -119,9 +117,8 @@ def choose_dates(message: Message) -> None:
                         data['querystring_properties_list'].update(
                             {'adults1': message.text.strip()}
                         )
-                    bot.set_state(message.from_user.id, UserStateInfo.dates, message.chat.id)
-                bot.send_message(message.from_user.id,
-                                 "Запомнил. Укажите даты заезда и выезда (день-месяц-год) в формате 'дд.мм.гггг-дд.мм.гггг'")
+                    bot.set_state(message.from_user.id, UserStateInfo.trip_year)
+                bot.send_message(message.from_user.id, "В каком году планируется Ваша поездка?")
             else:
                 for i_ind, i_am in enumerate(ans):
                     if int(i_am) <= 0:
@@ -131,9 +128,8 @@ def choose_dates(message: Message) -> None:
                             data['querystring_properties_list'].update(
                                 {f'adults{i_ind + 1}': i_am}
                             )
-                        bot.set_state(message.from_user.id, UserStateInfo.dates, message.chat.id)
-                bot.send_message(message.from_user.id,
-                            "Запомнил. Укажите даты заезда и выезда (день-месяц-год) в формате 'дд.мм.гггг-дд.мм.гггг'")
+                        bot.set_state(message.from_user.id, UserStateInfo.trip_year)
+                bot.send_message(message.from_user.id, "В каком году планируется Ваша поездка?")
         else:
             bot.send_message(message.from_user.id, f"Вы указали количество номеров - {rooms_amount}. "
                                                    f"Хотите указать другое количество номеров?")
@@ -156,87 +152,63 @@ def change_state(message):
                                                f"Введите {rooms_amount} числа через пробел.")
 
 
-@bot.message_handler(state=UserStateInfo.dates)
-def get_dates(message: Message) -> None:
-    try:
-        dates = message.text.strip().split('-')
-        dates_to_list = list(map(lambda elem: int(elem), dates[0].split('.')))
-        dates_from_list = list(map(lambda elem: int(elem), dates[1].split('.')))
-
-        dates_to = datetime(dates_to_list[2], dates_to_list[1], dates_to_list[0]).date()
-        dates_from = datetime(dates_from_list[2], dates_from_list[1], dates_from_list[0]).date()
-
-        with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
-            data['querystring_properties_list'].update(
-                {'checkIn' : str(dates_to)}
-            )
-            data['querystring_properties_list'].update(
-                {'checkOut': str(dates_from)}
-            )
-            data['days_count'] = dates_from - dates_to
-        bot.set_state(message.from_user.id, UserStateInfo.hotels_count, message.chat.id)
-        bot.send_message(message.from_user.id, "Введите какое количество отелей показать.")
-
-    except Exception:
-        bot.send_message(message.from_user.id, "Введите даты заезда и выезда в формате 'дд.мм.гггг-дд.мм.гггг'.")
+@bot.message_handler(state=UserStateInfo.trip_year)
+def get_trip_year(message:Message) -> None:
+    if message.text.strip().isdigit():
+        year_now = datetime.now().year
+        if int(message.text.strip()) > year_now:
+            with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
+                data['shown_dates'] = (int(message.text.strip()), 1)
+            bot.send_message(message.from_user.id, "Выберете дату заезда.",
+                             reply_markup=create_calendar(year=data.get('shown_dates')[0],
+                                                          month=data.get('shown_dates')[1]))
+        elif int(message.text.strip()) == year_now:
+            month_now = datetime.now().month
+            with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
+                data['shown_dates'] = (year_now, month_now)
+            bot.send_message(message.from_user.id, "Выберете дату заезда/выезда.",
+                             reply_markup=create_calendar(year=data.get('shown_dates')[0],
+                                                          month=data.get('shown_dates')[1]))
+        else:
+            bot.send_message(message.from_user.id, f"Значение года не может быть меньше текущего - {year_now}.")
+    else:
+        bot.send_message(message.from_user.id, "Год не может содержать буквы и символы.")
 
 
-@bot.message_handler(state=UserStateInfo.hotels_count)
 def get_hotels_count(message: Message) -> None:
-    try:
-        page_number = math.ceil(int(message.text.strip()) / 25)
-        page_size = int(message.text.strip())
+
+    if message.text.strip().isdigit():
+        request_count = math.ceil(int(message.text.strip()) / 25)
 
         with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
             data['querystring_properties_list'].update(
-                {'pageNumber' : str(page_number)}
+                {'pageNumber': None}
             )
             data['querystring_properties_list'].update(
-                {'pageSize' : str(page_size)}
+                {'pageSize': None}
             )
+            data['hotels_count'] = int(message.text.strip())
+            data['request_count'] = request_count
+            print(data)
 
-        bot.set_state(message.from_user.id, UserStateInfo.hotels_photo, message.chat.id)
-        bot.send_message(message.from_user.id, "Показать фотографии отеля? Введите сообщение в формате: "
-                                                   "'Да 3' или 'Нет'.")
-
-    except Exception:
+        bot.set_state(message.from_user.id, UserStateInfo.hotels_photo_flag, message.chat.id)
+        bot.send_message(message.from_user.id, "Показать фотографии отеля?")
+    else:
         bot.send_message(message.from_user.id, "Количество отелей должно быть целым числом и больше нуля.")
 
 
-@bot.message_handler(state=UserStateInfo.hotels_photo)
-def get_hotel_photo(message: Message) -> None:
-    with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
-        try:
-            ans = message.text.strip().split()
-            if ans[0].lower() in ['да', 'ага', 'yes', 'y']:
+@bot.message_handler(state=UserStateInfo.hotels_photo_flag)
+def get_hotels_photo_flag(message:Message) -> None:
+    ans = message.text.strip()
+    if message.text.strip().isalpha():
+        with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
+            if ans.lower() in ['да', 'ага', 'yes', 'y']:
                 data['hotel_photo'] = {
-                    'need_photo' : True
+                    'need_photo': True
                 }
-                try:
-                    if len(ans) > 1:
-                        decision = int(ans[1])
-                        if decision > 0:
-                            data['hotel_photo'].update(
-                                {
-                                    'photo_count': decision
-                                }
-                            )
-                            if data.get('search').get('mode') in ['lowprice', 'highprice']:
-                                bot.set_state(message.from_user.id, UserStateInfo.confirm_data, message.chat.id)
-                                bot.send_message(message.from_user.id, f"{print_data(data=data)}Верно?")
-                            else:
-                                bot.send_message(message.from_user.id,
-                                                 f"Введите диапазон цен (минимальная цена - максимальная цена "
-                                                 f"в {data.get('querystring_location_search').get('currency')})"
-                                                 " в формате '1000-2000'.")
-                                bot.set_state(message.from_user.id, UserStateInfo.price_range, message.chat.id)
-                        else:
-                            raise HotelPhotoError
-                    else:
-                        raise HotelPhotoError
-                except ValueError:
-                    raise HotelPhotoError
-            elif ans[0].lower() in ['нет', 'no', 'nope', 'n']:
+                bot.send_message(message.from_user.id, "Сколько фотографий?")
+                bot.set_state(message.from_user.id, UserStateInfo.hotels_photo_count, message.chat.id)
+            elif ans.lower() in ['нет', 'no', 'nope', 'n']:
                 data['hotel_photo'] = {
                     'need_photo' : False
                 }
@@ -244,14 +216,38 @@ def get_hotel_photo(message: Message) -> None:
                     bot.set_state(message.from_user.id, UserStateInfo.confirm_data, message.chat.id)
                     bot.send_message(message.from_user.id, f"{print_data(data=data)}Верно?")
                 else:
-                    bot.send_message(message.from_user.id, f"Введите диапазон цен (минимальная цена - максимальная цена "
-                                                           f"в {data.get('querystring_location_search').get('currency')})"
-                                                           " в формате '1000-2000'.")
+                    bot.send_message(message.from_user.id,
+                                     f"Введите диапазон цен (минимальная цена - максимальная цена "
+                                     f"в {data.get('querystring_location_search').get('currency')})"
+                                     " в формате '1000-2000'.")
                     bot.set_state(message.from_user.id, UserStateInfo.price_range, message.chat.id)
             else:
-                raise HotelPhotoError
-        except HotelPhotoError:
-            bot.send_message(message.from_user.id, "Хм...не понял. Введите сообщение в формате: 'Да 3' или 'Нет'.")
+                bot.send_message(message.from_user.id, "Хм...не понял. Введите 'да' или 'нет'.")
+    else:
+        bot.send_message(message.from_user.id, "Хм...не понял. Введите 'да' или 'нет'.")
+
+
+@bot.message_handler(state=UserStateInfo.hotels_photo_count)
+def get_hotel_photo(message: Message) -> None:
+    if message.text.strip().isdigit():
+        photo_count = int(message.text.strip())
+        with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
+            data['hotel_photo'].update(
+                {
+                    'photo_count': photo_count
+                }
+            )
+        if data.get('search').get('mode') in ['lowprice', 'highprice']:
+            bot.set_state(message.from_user.id, UserStateInfo.confirm_data, message.chat.id)
+            bot.send_message(message.from_user.id, f"{print_data(data=data)}Верно?")
+        else:
+            bot.send_message(message.from_user.id,
+                             f"Введите диапазон цен (минимальная цена - максимальная цена "
+                             f"в {data.get('querystring_location_search').get('currency')})"
+                             " в формате '1000-2000'.")
+            bot.set_state(message.from_user.id, UserStateInfo.price_range, message.chat.id)
+    else:
+        bot.send_message(message.from_user.id, "Количество фотографий должно быть целым неотрицательным числом.")
 
 
 @bot.message_handler(state=UserStateInfo.price_range)
@@ -325,38 +321,47 @@ def distance_range(message: Message) -> None:
 def confirm_data(message: Message) -> None:
     if message.text.lower() in ['да', 'ага', 'yes', 'y']:
         # Через запрос к API
-        # with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
-        #     location_info = get_info(url='https://hotels4.p.rapidapi.com/locations/v2/search',
-        #                     querystring=data['querystring_location_search'])
-        #
-        #     """Запись в текстовый файл для работы через файлы"""
-        #     with open(f"parced_data/location_info_result_{data.get('search').get('mode')}.txt", 'w') as file:
-        #         file.write(location_info)
-        #
-        #     if data.get('search').get('mode') == 'bestdeal':
-        #         collecting_lm_ids(location_info=location_info, data=data)
-        #
-        # location_info_result = location_info_results(location_info=location_info)
-        # if location_info_result:
-        #     bot.send_message(message.from_user.id, "Уточните, пожалуйста, где ищем:",
-        #                     reply_markup=place_choice(places=collecting_data_places(location_info_result)))
-        #     with open(f"parced_data/location_info_result_{data.get('search').get('mode')}.json", 'w') as file:
-        #         json.dump(location_info_result, file, indent=4)
-        # else:
-        #     bot.send_message(message.from_user.id, "Извините, по данному городу информации нет.")
+        with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
+            location_info = get_info(url='https://hotels4.p.rapidapi.com/locations/v2/search',
+                            querystring=data['querystring_location_search'])
+
+            """Запись в текстовый файл для работы через файлы"""
+            with open(f"parced_data/location_info_result_{data.get('search').get('mode')}.txt", 'w') as file:
+                file.write(location_info)
+
+            if data.get('search').get('mode') == 'bestdeal':
+                collecting_lm_ids(location_info=location_info, data=data)
+
+        location_info_result = location_info_results(location_info=location_info)
+        if location_info_result:
+            places_lst = collecting_data_places(location_info_result)
+            bot.send_message(message.from_user.id, "Уточните, пожалуйста, где ищем:",
+                            reply_markup=place_choice(places=places_lst))
+            with open(f"parced_data/location_info_result_{data.get('search').get('mode')}.json", 'w') as file:
+                json.dump(location_info_result, file, indent=4)
+
+            with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
+                request_filling(data=data, places=places_lst)
+
+        else:
+            bot.send_message(message.from_user.id, "Извините, по данному городу информации нет. Давайте уточним запрос."
+                                                   "Выберете команду - /lowprice, /highprice, /bestdeal")
+            bot.set_state(message.from_user.id, UserStateInfo.info_collected)
+            bot.register_next_step_handler(message, choose_lang)
 
 
 
         # Только для работы с файлом
-        with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
-            with open(f"parced_data/location_info_result_{data.get('search').get('mode')}.json", 'r') as file:
-                location_info_result = json.load(file)
-        if data.get('search').get('mode') == 'bestdeal':
-            with open(f"parced_data/location_info_result_{data.get('search').get('mode')}.txt", 'r') as file:
-                location_info = file.read()
-            collecting_lm_ids(location_info=location_info, data=data)
-            bot.send_message(message.from_user.id, "Уточните, пожалуйста, где ищем:",
-                             reply_markup=place_choice(places=collecting_data_places(location_info_result)))
+        # with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
+        #     with open(f"parced_data/location_info_result_{data.get('search').get('mode')}.json", 'r') as file:
+        #         location_info_result = json.load(file)
+        # if data.get('search').get('mode') == 'bestdeal':
+        #     with open(f"parced_data/location_info_result_{data.get('search').get('mode')}.txt", 'r') as file:
+        #         location_info = file.read()
+        #     collecting_lm_ids(location_info=location_info, data=data)
+        # bot.send_message(message.from_user.id, "Уточните, пожалуйста, где ищем:",
+        #                  reply_markup=place_choice(places=collecting_data_places(location_info_result)))
+
         #
 
     else:

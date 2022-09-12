@@ -1,6 +1,9 @@
 import json
 from utils.get_correct_price import get_correct_price
 from utils.get_API_info import get_info
+from database.hotel_filling import hotel_filling
+from database.hotel_photo_filling import hotel_photo_filling
+
 
 def collect_data_to_show(data, results, flag):
     if results == []:
@@ -35,6 +38,8 @@ def collect_data_to_show(data, results, flag):
                     'hotel_photos' : ''
                 }
             )
+
+            hotel_filling(data=data, i_index=i_index)
 
             if flag:
                 # Для работы с API
@@ -73,12 +78,16 @@ def collect_data_to_show(data, results, flag):
                         }
                     )
                 else:
-                    temp_dict = ['Нет фотографий отеля']
+                    temp_dict = ['У выбранного Вами отеля нет фотографий']
                     data['search'][f"{data.get('search').get('mode')}"]['results'][i_index].update(
                         {
                             'hotel_photos': temp_dict
                         }
                     )
+
+                # hotel_photo_filling(data=data, temp_dict=temp_dict, i_index=i_index)
+                hotel_photo_filling(temp_dict=temp_dict)
+
 
         data['search'][f"{data.get('search').get('mode')}"]['results'] = \
             sorted(data['search'][f"{data.get('search').get('mode')}"]['results'],
@@ -87,8 +96,6 @@ def collect_data_to_show(data, results, flag):
         data['search'][f"{data.get('search').get('mode')}"]['results'] = \
             sorted(data['search'][f"{data.get('search').get('mode')}"]['results'],
                    key=lambda elem: elem['landmarks'][0].split(' - '))
-
-
 
             # except IndexError:
             #     pass

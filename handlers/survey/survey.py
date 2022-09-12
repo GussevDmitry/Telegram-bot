@@ -2,6 +2,7 @@ from loader import bot
 from states.user_states import UserStateInfo
 from telebot.types import Message
 from keyboards.reply.send_contact import request_contact
+from database.create_database import db, User
 
 
 @bot.message_handler(commands=['survey'])
@@ -58,14 +59,29 @@ def get_contact_info(message: Message) -> None:
     if message.content_type == 'contact':
         bot.set_state(message.from_user.id, UserStateInfo.info_collected, message.chat.id)
         with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
-            data['phone_number'] = message.contact.phone_number
+            data['phone_number'] = int(message.contact.phone_number[2:])
         contact_info = f"\U0001F64CСпасибо. Данные записал\n" \
                        f"Имя - {data['name']}\n" \
                        f"Возраст - {data['age']}\n" \
                        f"Страна проживания - {data['country']}\n" \
                        f"Город проживания - {data['city']}\n" \
                        f"Номер телефона - {data['phone_number']}"
-        bot.send_message(message.from_user.id, contact_info)
+
+        # Может быть разместить в отдельной функции...
+        with db:
+            help_query = User.select(User.phone_number)
+            help_set = set()
+            for i_num in help_query:
+                help_set.add(i_num.phone_number)
+            if int(message.contact.phone_number[2:]) not in help_set:
+                User.create(name=data.get('name'), age=data.get('age'), country=data.get('country'),
+                            city=data.get('city'), phone_number=data.get('phone_number'))
+                bot.send_message(message.from_user.id, contact_info)
+            else:
+                bot.send_message(message.from_user.id, "Вы уже зарегистрированы! Вам доступен просмотр истории поиска."
+                                                       "Для просмотра наберите команду /history")
+            help_set = set()
+
         bot.send_message(message.chat.id, "Давайте приступим к подбору отеля для Вас. "
                                           "Чтобы ознакомиться с основными командами и их описанием, наберите /help")
     else:

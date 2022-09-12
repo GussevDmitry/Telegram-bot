@@ -1,7 +1,9 @@
 from telebot.types import ReplyKeyboardMarkup, KeyboardButton
 
-def start_search():
+
+def show_more_history():
     kb = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
-    bt = KeyboardButton("Запустить поиск!")
+    bt = KeyboardButton("Показать историю запросов")
     kb.add(bt)
+
     return kb
