@@ -2,7 +2,7 @@ from loader import bot
 from telebot.types import CallbackQuery
 from datetime import datetime
 from keyboards.inline.create_calendar import create_calendar
-from handlers.choice_collector import get_hotels_count
+from states.user_states import UserStateInfo
 
 
 @bot.callback_query_handler(func=lambda call: 'DAY' in call.data)
@@ -17,23 +17,26 @@ def callback_day(call: CallbackQuery) -> None:
                 data['querystring_properties_list'].update(
                     {'checkIn': str(check_in)}
                 )
+                bot.answer_callback_query(call.id, "Запомнил! Теперь выберете дату выезда.")
             else:
                 bot.answer_callback_query(call.id, f"Выберете месяц и день не раньше сегодняшнего - {date_now}")
         else:
             check_out = datetime(data.get("shown_dates")[0], data.get("shown_dates")[1], int(day)).date()
-            if datetime.fromisoformat(data.get('querystring_properties_list').get('checkIn')).date() <= check_out:
+            check_in = datetime.fromisoformat(data.get('querystring_properties_list').get('checkIn')).date()
+            if check_in <= check_out:
                 data['querystring_properties_list'].update(
                     {'checkOut': str(check_out)}
                 )
-                check_in = datetime.fromisoformat(data.get('querystring_properties_list').get('checkIn')).date()
+                bot.answer_callback_query(call.id, "Отлично, запомнил!")
                 delta = (check_out - check_in).days
                 data['days_count'] = delta
                 bot.send_message(call.from_user.id, "Введите какое количество отелей показать.")
-                bot.register_next_step_handler(call.message, get_hotels_count)
+                bot.edit_message_reply_markup(call.message.chat.id, call.message.message_id)
+                bot.set_state(call.from_user.id, UserStateInfo.hotels_count)
+                # bot.register_next_step_handler(call.message, get_hotels_count)
             else:
                 bot.answer_callback_query(call.id, f"Выберете месяц и день после даты заезда - "
                                                    f"{data.get('querystring_properties_list').get('checkIn')}")
-
 
 
 @bot.callback_query_handler(func=lambda call: "MONTH" in call.data)

@@ -39,9 +39,10 @@ if __name__ == '__main__':
     #     .join(Request, on=(Request.user_id == User.phone_number))\
     #     .join(Hotel, on=(Hotel.request_id == Request.id))\
     #     .join(Photo, on=(Photo.hotel_id == Hotel.id))
-    #
+    # #
     # for i in db.execute(query_total):
     #     print(i)
+
     #
     # query_photo = User.select(Hotel.id, Hotel.hotel_id, Photo.photo_url) \
     #     .where(User.phone_number == 9251957900) \

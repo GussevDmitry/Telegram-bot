@@ -10,3 +10,5 @@ from . import create_calendar
 from . import create_calendar_callback
 from . import create_photo_buttons
 from . import create_photo_buttons_callback
+from . import need_photo_choice
+from . import need_photo_choice_callback

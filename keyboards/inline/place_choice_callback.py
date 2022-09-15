@@ -34,6 +34,7 @@ def choose_place(call: CallbackQuery):
         )
 
     bot.send_message(call.from_user.id, "Нажмите на кнопку для начала поиска.", reply_markup=start_search())
+    bot.edit_message_reply_markup(call.message.chat.id, call.message.message_id)
     if data.get('search').get('mode') == 'lowprice':
         data['querystring_properties_list'].update(
             {'sortOrder' : 'PRICE'}

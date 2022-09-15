@@ -28,9 +28,10 @@ def show_history_results_callback(call: CallbackQuery):
         text_hotel = f"Название отеля: {i_hotel[2]}\n" \
                      f"Рейтинг отеля: {i_hotel[3]}\n" \
                      f"Адрес: {i_hotel[4]}\n" \
-                     f"Стоимость: {i_hotel[5]}\n" \
-                     f"Фото: {url_str}"
-        bot.send_message(call.from_user.id, text_hotel)
+                     f"Стоимость: {i_hotel[5]}\n"
+
+        text_photo = f"Фото: {url_str}" if len(url_str) >= 1 else ""
+        bot.send_message(call.from_user.id, f"{text_hotel}{text_photo}")
     bot.send_message(call.from_user.id, "Для вывода истории запросов нажмите на кнопку.",
                      reply_markup=show_more_history())
     bot.register_next_step_handler(call.message, get_user_history)

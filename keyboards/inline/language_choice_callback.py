@@ -3,24 +3,27 @@ from telebot.types import CallbackQuery
 from keyboards.inline.currency_choice import currency_choice
 
 
-@bot.callback_query_handler(func=lambda call: call.data in ['ru-RU', 'en-US'])
+@bot.callback_query_handler(func=lambda call: call.data in ['русский', 'английский'])
 def language(call: CallbackQuery):
     bot.answer_callback_query(callback_query_id=call.id, text='Запомнил!')
-    if call.data == "ru-RU":
+    if call.data == "русский":
         with bot.retrieve_data(call.from_user.id) as data:
             data['querystring_location_search'] = {
-                'locale': 'ru-RU'
+                'locale': 'ru_RU'
             }
             data['querystring_properties_list'] = {
-                'locale': 'ru-RU'
+                'locale': 'ru_RU'
             }
-    elif call.data == "en-US":
+            data['language'] = "русском"
+    elif call.data == "английский":
         with bot.retrieve_data(call.from_user.id) as data:
             data['querystring_location_search'] = {
-                'locale': 'en-US'
+                'locale': 'en_US'
             }
             data['querystring_properties_list'] = {
-                'locale': 'en-US'
+                'locale': 'en_US'
             }
+            data['language'] = "английском"
     bot.send_message(call.message.chat.id, "Теперь выберете в какой валюте выводить стоимость отелей.",
                      reply_markup=currency_choice())
+    bot.edit_message_reply_markup(call.message.chat.id, call.message.message_id)

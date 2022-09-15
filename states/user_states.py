@@ -12,6 +12,7 @@ class UserStateInfo(StatesGroup):
     rooms_number = State()
     people_amount = State()
     trip_year = State()
+    hotels_count = State()
     hotels_photo_flag = State()
     hotels_photo_count = State()
     confirm_data = State()
