@@ -4,7 +4,12 @@ from states.user_states import UserStateInfo
 
 
 @bot.callback_query_handler(func=lambda call: call.data in ['USD', 'EUR', 'RUB'])
-def currency(call: CallbackQuery):
+def currency(call: CallbackQuery) -> None:
+    """
+    Handling the callback (function "currency_choice") with preferred currency.
+    Asking user in which city he/she prefers to search hotels
+    :param call: user's currency choice
+    """
     bot.answer_callback_query(callback_query_id=call.id, text='Запомнил!')
     if call.data == "USD":
         with bot.retrieve_data(call.from_user.id) as data:
@@ -25,7 +30,6 @@ def currency(call: CallbackQuery):
                 {'currency': 'EUR'}
             )
             data['currency'] = ("евро", "евро", "евро", "евро")
-
 
     elif call.data == "RUB":
         with bot.retrieve_data(call.from_user.id) as data:

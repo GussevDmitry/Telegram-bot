@@ -11,3 +11,15 @@ def create_photo_buttons(index, hotel_index):
     keyboard_photos["inline_keyboard"].append(row)
 
     return json.dumps(keyboard_photos)
+
+
+def create_photo_buttons_history(index, hotel_index):
+    keyboard_photos = {"inline_keyboard": []}
+    row = [
+        {"text": "<", "callback_data": f"PREV_HIST,{index},{hotel_index}"},
+        {"text": ">", "callback_data": f"NEXT_HIST,{index},{hotel_index}"}
+    ]
+
+    keyboard_photos["inline_keyboard"].append(row)
+
+    return json.dumps(keyboard_photos)

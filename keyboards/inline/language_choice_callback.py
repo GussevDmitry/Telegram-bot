@@ -4,7 +4,11 @@ from keyboards.inline.currency_choice import currency_choice
 
 
 @bot.callback_query_handler(func=lambda call: call.data in ['русский', 'английский'])
-def language(call: CallbackQuery):
+def language(call: CallbackQuery) -> None:
+    """
+    Catching the callback (function "language_choice") with preferred language
+    :param call: user's language choice
+    """
     bot.answer_callback_query(callback_query_id=call.id, text='Запомнил!')
     if call.data == "русский":
         with bot.retrieve_data(call.from_user.id) as data:

@@ -1,7 +1,13 @@
 from utils.misc.commands_comparison import commands_comparison
+from typing import Dict
 
 
-def print_data(data):
+def print_data(data: Dict) -> str:
+    """
+    Confirming the collected information about user's request
+    :param data: memory storage
+    :return: Collected information about user's request
+    """
     search_mode = data.get('search').get('mode')
     desc = commands_comparison(mode=search_mode)
     text = f"{desc}\n" \

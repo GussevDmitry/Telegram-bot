@@ -1,6 +1,9 @@
 from database.create_database import db, User, Request
+from datetime import datetime
+from typing import Dict, List
 
-def request_filling(data, places):
+
+def request_filling(data: Dict, places: List):
     dest_id_chosen = data.get('querystring_properties_list').get('destinationId')
     for i_place in places:
         if i_place.get('destinationId') == dest_id_chosen:
@@ -20,9 +23,11 @@ def request_filling(data, places):
 
     with db:
         query_user_id = User.select(User.phone_number).where(User.phone_number == data.get('phone_number'))
-        Request.create(user_id=query_user_id, name=data.get('search').get('mode'),
+        Request.create(user_id=query_user_id,
+                       name=data.get('search').get('mode'),
+                       date_time=datetime.now(),
                        lang=data.get('querystring_properties_list').get('locale'),
-                       curr=data.get('querystring_properties_list').get('currency'),
+                       curr=data.get('currency')[3],
                        location=dest_name_chosen,
                        rooms_amount=data.get('rooms_amount'),
                        people_count=data.get('people_amount'),

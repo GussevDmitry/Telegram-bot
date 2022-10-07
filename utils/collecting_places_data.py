@@ -1,6 +1,14 @@
 import re
+import json
+from typing import List
 
-def collecting_data_places(location_info_result):
+
+def collecting_data_places(location_info_result: json) -> List:
+    """
+    Collecting the information about found places
+    :param location_info_result: json file containing the information about city groups
+    :return: the list with the information about found places
+    """
     places = []
     for i_data in location_info_result.values():
         for j_data in i_data:

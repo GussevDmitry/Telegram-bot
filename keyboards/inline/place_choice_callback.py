@@ -8,9 +8,15 @@ from handlers.bestdeal.bestdeal import bestdeal_search
 
 @bot.callback_query_handler(func=lambda call: call.data.isdigit())
 def choose_place(call: CallbackQuery):
+    """
+    Handling the callback (function "place_choice") with chosen destination.
+    Starting the search with reply keyboard "start_search".
+    Filling the "querystring_properties_list" data with required information
+    :param call: user's destination choice (the city or neighbourhood)
+    """
     with bot.retrieve_data(call.from_user.id) as data:
         data['querystring_properties_list'].update(
-            {'destinationId' : str(call.data)}
+            {'destinationId': str(call.data)}
         )
         if data.get('search').get('mode') == 'bestdeal':
             data['search'][f"{data.get('search').get('mode')}"].update(
@@ -37,7 +43,7 @@ def choose_place(call: CallbackQuery):
     bot.edit_message_reply_markup(call.message.chat.id, call.message.message_id)
     if data.get('search').get('mode') == 'lowprice':
         data['querystring_properties_list'].update(
-            {'sortOrder' : 'PRICE'}
+            {'sortOrder': 'PRICE'}
         )
         bot.register_next_step_handler(call.message, lowprice_search)
     elif data.get('search').get('mode') == 'highprice':

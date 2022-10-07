@@ -25,7 +25,7 @@ def lowprice_search(message: Message) -> None:
     #     results = result.get('data').get('body').get('searchResults').get('results')
     #     flag = data.get('hotel_photo').get('need_photo')
     #
-    if total_results[0] != "По Вашему запросу ничего не найдено. Давайте попробуем изменить запрос.":
+    if total_results != "По Вашему запросу ничего не найдено. Давайте попробуем изменить запрос.":
         collect_data_to_show(data=data, results=total_results, flag=flag)
 
         for i_index, i_data in enumerate(data['search'][f"{data.get('search').get('mode')}"]['results']):
@@ -39,9 +39,9 @@ def lowprice_search(message: Message) -> None:
                    f"Количество звезд: {i_data.get('starRating')}\n" \
                    f"Рейтинг гостей: {i_data.get('guestRating')}\n" \
                    f"Расстояние до {lm_text}\n" \
-                   f"Стоимость за одну ночь: {i_data.get('price_per_night')} " \
+                   f"Стоимость за одну ночь: {i_data.get('price_per_night'):,d} " \
                    f"{currency_output(price=i_data.get('price_per_night'), data=data)}\n" \
-                   f"Стоимость итого: {i_data.get('price')} " \
+                   f"Стоимость итого: {i_data.get('price'):,d} " \
                    f"{currency_output(price=i_data.get('price_per_night'), data=data)} за {data.get('rooms_amount')} " \
                    f"комнату(ы) для {data.get('people_amount')} гостей\n"
             bot.send_message(message.from_user.id, text)
@@ -56,6 +56,6 @@ def lowprice_search(message: Message) -> None:
 
         bot.send_message(message.from_user.id, "Поиск завершен! Для перехода в главное меню нажмите команду /help.")
     else:
-        bot.send_message(message.from_user.id, total_results[0], reply_markup=specify_request())
+        bot.send_message(message.from_user.id, total_results, reply_markup=specify_request())
     print(data)
     bot.set_state(message.from_user.id, UserStateInfo.info_collected, message.chat.id)
