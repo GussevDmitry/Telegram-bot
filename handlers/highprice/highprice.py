@@ -6,9 +6,15 @@ from utils.properties_info_results import properties_info_results
 from keyboards.inline.create_photo_buttons import create_photo_buttons
 from utils.misc.currency_output import currency_output
 from keyboards.reply.specify_request import specify_request
+from loguru import logger
 
 
 def highprice_search(message: Message) -> None:
+    """
+    Collecting information about appropriate for requirements hotels (highprice command).
+    Printing the information about hotels and sending hotel's photos (if needed)
+    :param message: Start search message (reply keyboard "start_search")
+    """
     # Через запрос к API
     bot.send_message(message.from_user.id, "Начинаю подбор отелей по Вашему запросу. Ожидайте завершающего сообщения.")
     with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
@@ -56,5 +62,5 @@ def highprice_search(message: Message) -> None:
         bot.send_message(message.from_user.id, "Поиск завершен! Для перехода в главное меню нажмите команду /help.")
     else:
         bot.send_message(message.from_user.id, total_results, reply_markup=specify_request())
-    print(data)
+    logger.debug(f"{data}")
     bot.set_state(message.from_user.id, UserStateInfo.info_collected, message.chat.id)

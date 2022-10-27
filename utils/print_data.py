@@ -17,4 +17,5 @@ def print_data(data: Dict) -> str:
            f"{data.get('querystring_properties_list').get('checkOut')}\n" \
            f"Всего дней - {data.get('days_count')}\n" \
            f"Показываю отелей: {data.get('hotels_count')}\n"
+
     return text

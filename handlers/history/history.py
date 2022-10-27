@@ -6,19 +6,21 @@ from states.user_states import UserStateInfo
 from database.request_description import request_description
 from utils.misc.commands_comparison import commands_comparison
 from datetime import datetime
-from utils.misc.currency_output import currency_output
 from loguru import logger
 
 
 @bot.message_handler(state=UserStateInfo.info_collected, commands=['history'])
-def get_user_history(message: Message):
+def get_user_history(message: Message) -> None:
+    """
+    Showing the history of user's requests
+    :param message: message from user (history command)
+    """
     bot.send_message(message.from_user.id, "История Ваших поисковых запросов:")
 
     with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
         query_desc = request_description(data=data)
 
-    # Logging actions
-    logger.debug(f"User {data.get('name')} decides to watch his search history")
+    logger.debug(f"User {data.get('name')} decides to watch his search history")  # Logging actions
 
     for i_req in db.execute(query_desc):
         desc = commands_comparison(i_req[1])

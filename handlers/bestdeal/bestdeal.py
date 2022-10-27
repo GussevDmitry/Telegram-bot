@@ -6,10 +6,15 @@ from utils.properties_info_results import properties_info_results
 from keyboards.inline.create_photo_buttons import create_photo_buttons
 from utils.misc.currency_output import currency_output
 from keyboards.reply.specify_request import specify_request
+from loguru import logger
 
 
 def bestdeal_search(message: Message) -> None:
-    # Через запрос к API
+    """
+    Collecting information about appropriate for requirements hotels (bestdeal command).
+    Printing the information about hotels and sending hotel's photos (if needed)
+    :param message: Start search message (reply keyboard "start_search")
+    """
     bot.send_message(message.from_user.id, "Начинаю подбор отелей по Вашему запросу...Ожидайте завершающего сообщения.")
     with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
         flag = data.get('hotel_photo').get('need_photo')
@@ -22,7 +27,7 @@ def bestdeal_search(message: Message) -> None:
             photos = ["Фотографии отеля не запрашивались"]
             if flag:
                 photos = data['search'][f"{data.get('search').get('mode')}"]['results'][i_index].get('hotel_photos')
-            lm_text = ', '.join(i_data.get('landmarks')[:1])
+            lm_text = ', '.join(i_data.get('landmarks'))
             text = f"\U0001F3E8 Отель {i_data.get('name')}\n" \
                    f"Адрес - {i_data.get('address')}\n" \
                    f"Количество звезд: {i_data.get('starRating')}\n" \
@@ -47,5 +52,5 @@ def bestdeal_search(message: Message) -> None:
         bot.send_message(message.from_user.id, "Поиск завершен! Для перехода в главное меню нажмите команду /help.")
     else:
         bot.send_message(message.from_user.id, results_to_show, reply_markup=specify_request())
-    print(data)
+    logger.debug(f"{data}")
     bot.set_state(message.from_user.id, UserStateInfo.info_collected, message.chat.id)

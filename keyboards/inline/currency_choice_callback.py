@@ -3,7 +3,7 @@ from telebot.types import CallbackQuery
 from states.user_states import UserStateInfo
 
 
-@bot.callback_query_handler(func=lambda call: call.data in ['USD', 'EUR', 'RUB'])
+@bot.callback_query_handler(func=lambda call: call.data in ('USD', 'EUR', 'RUB'))
 def currency(call: CallbackQuery) -> None:
     """
     Handling the callback (function "currency_choice") with preferred currency.

@@ -3,8 +3,14 @@ from datetime import datetime
 from typing import Dict, List
 
 
-def request_filling(data: Dict, places: List):
+def request_filling(data: Dict, places: List) -> None:
+    """
+    Filling the database with the information about the request
+    :param data: memory storage
+    :param places: the list with the information about found places
+    """
     dest_id_chosen = data.get('querystring_properties_list').get('destinationId')
+    dest_name_chosen = ''
     for i_place in places:
         if i_place.get('destinationId') == dest_id_chosen:
             dest_name_chosen = f"{i_place.get('name')}, {i_place.get('description')}"
@@ -25,7 +31,7 @@ def request_filling(data: Dict, places: List):
         query_user_id = User.select(User.phone_number).where(User.phone_number == data.get('phone_number'))
         Request.create(user_id=query_user_id,
                        name=data.get('search').get('mode'),
-                       date_time=datetime.now(),
+                       date_time=datetime.now().__format__("%Y-%m-%d %H:%M"),
                        lang=data.get('querystring_properties_list').get('locale'),
                        curr=data.get('currency')[3],
                        location=dest_name_chosen,

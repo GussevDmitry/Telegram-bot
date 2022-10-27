@@ -3,7 +3,7 @@ from telebot.types import CallbackQuery
 from keyboards.inline.currency_choice import currency_choice
 
 
-@bot.callback_query_handler(func=lambda call: call.data in ['русский', 'английский'])
+@bot.callback_query_handler(func=lambda call: call.data in ('русский', 'английский'))
 def language(call: CallbackQuery) -> None:
     """
     Catching the callback (function "language_choice") with preferred language

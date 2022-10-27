@@ -8,7 +8,11 @@ from keyboards.inline.create_photo_buttons import create_photo_buttons_history
 
 
 @bot.callback_query_handler(func=lambda call: call.data.istitle())
-def show_history_results_callback(call: CallbackQuery):
+def show_history_results_callback(call: CallbackQuery) -> None:
+    """
+    Handling the callback (function "show_history_results") with user's request choice
+    :param call: user's request choice
+    """
     with bot.retrieve_data(call.from_user.id) as data:
         query_res = request_results(call=call, data=data)
 
@@ -25,9 +29,6 @@ def show_history_results_callback(call: CallbackQuery):
                      f"Стоимость итого в {i_hotel[8]}: {i_hotel[7]:,d}\n" \
                      f"Расстояние: {lm_str}"
 
-        # text_photo = f"Фото: {url_str}" if len(url_str) >= 1 else ""
-        # bot.send_message(call.from_user.id, f"{text_hotel}{text_photo}")
-
         urls_lst = url_str.split(", ")
         data["history_urls"].update(
             {
@@ -35,10 +36,13 @@ def show_history_results_callback(call: CallbackQuery):
             }
         )
         bot.send_message(call.from_user.id, f"{text_hotel}")
-        if len(url_str) >= 1:
+        if len(url_str) > 1:
             bot.send_photo(call.from_user.id, urls_lst[0], reply_markup=create_photo_buttons_history(0, i_hotel[0]))
+        elif len(url_str) == 1:
+            bot.send_photo(call.from_user.id, urls_lst[0])
         else:
-            bot.send_message(call.from_user.id, "\U0001F4DBУ отеля нет фотографий или фотографии отеля не запрашивались")
+            bot.send_message(call.from_user.id, "\U0001F4DBУ отеля нет "
+                                                "фотографий или фотографии отеля не запрашивались")
     bot.send_message(call.from_user.id, "Для вывода истории запросов нажмите на кнопку.",
                      reply_markup=show_more_history())
     bot.register_next_step_handler(call.message, get_user_history)
