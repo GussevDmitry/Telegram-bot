@@ -15,20 +15,19 @@ def check_the_dist_and_the_price(results: List, total_results: List, hotels_coun
     :param data: memory storage
     :return: the list with appropriate hotels
     """
-    # Checking the hotel price
+    start_pr = data.get('search').get('bestdeal').get('price_range')[0]
+    stop_pr = data.get('search').get('bestdeal').get('price_range')[1]
+    start_dist = data.get('search').get('bestdeal').get('distance_range')[0]
+    stop_dist = data.get('search').get('bestdeal').get('distance_range')[1]
     for i_hotel in results:
         if len(total_results) < hotels_count:
+            # Checking the hotel price
             i_hotel_pr = get_correct_price(i_item_dict=i_hotel, data=data)
             if isinstance(i_hotel_pr, str):
                 continue
 
-            start_pr = data.get('search').get('bestdeal').get('price_range')[0]
-            stop_pr = data.get('search').get('bestdeal').get('price_range')[1]
-
             if start_pr <= i_hotel_pr <= stop_pr:
                 # Checking the hotel distance
-                start_dist = data.get('search').get('bestdeal').get('distance_range')[0]
-                stop_dist = data.get('search').get('bestdeal').get('distance_range')[1]
                 res = float(i_hotel.get('landmarks')[0].get('distance').split()[0].replace(',', '.'))
                 if data.get('language') == 'английском':
                     start_dist /= 1.6093
@@ -38,8 +37,8 @@ def check_the_dist_and_the_price(results: List, total_results: List, hotels_coun
                     total_results.append(
                         i_hotel
                     )
-        else:
-            return total_results
+    else:
+        return total_results
 
 
 def properties_info_results(data: Dict) -> List | str:
@@ -124,7 +123,8 @@ def properties_info_results(data: Dict) -> List | str:
                                                          total_results=total_results,
                                                          hotels_count=hotels_count,
                                                          data=data)
-            print(total_results)
+            # total_results.extend(pre_total_results)
+            logger.debug(f"{total_results}")
 
         # writing the information in json file
         with open(f"parced_data/properties_info_{data.get('search').get('mode')}.json", 'w', encoding='utf-8') as file:
